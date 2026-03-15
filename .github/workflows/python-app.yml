@@ -33,5 +33,6 @@ jobs:
           ID_VPS: ${{ secrets.XSERVER_VPS_ID }}
         run: |
           # 注意：如果是 fa0311 的版本，运行方式是模块化调用
-          python -m xserver_auto_renew.main 
+          python -m xserver-auto-renew.login && python -m xserver-auto-renew.main
+          # python -m xserver_auto_renew.main 
           # 如果是普通脚本，则使用 python main.py
