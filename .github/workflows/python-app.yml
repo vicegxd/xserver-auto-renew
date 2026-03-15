@@ -1,39 +1,37 @@
-# This workflow will install Python dependencies, run tests and lint with a single version of Python
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
-
-name: Python application
+name: Xserver Auto Renew
 
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
-
-permissions:
-  contents: read
+  schedule:
+    # 每天日本时间 09:00, 15:00, 21:00 运行（防止错过 24 小时窗口）
+    - cron: '0 0,6,12 * * *'
+  workflow_dispatch: # 允许手动点击运行
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python 3.10
-      uses: actions/setup-python@v3
-      with:
-        python-version: "3.10"
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install flake8 pytest
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-    - name: Lint with flake8
-      run: |
-        # stop the build if there are Python syntax errors or undefined names
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    - name: Test with pytest
-      run: |
-        pytest
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install playwright
+          playwright install --with-deps chromium
+
+      - name: Run Auto Renew
+        env:
+          # 这里的变量名必须与 main.py 中 os.getenv() 的名称一致
+          USERNAME: ${{ secrets.XSERVER_USER }}
+          PASSWORD: ${{ secrets.XSERVER_PASS }}
+          ID_VPS: ${{ secrets.XSERVER_VPS_ID }}
+        run: |
+          # 注意：如果是 fa0311 的版本，运行方式是模块化调用
+          python -m xserver_auto_renew.main 
+          # 如果是普通脚本，则使用 python main.py
